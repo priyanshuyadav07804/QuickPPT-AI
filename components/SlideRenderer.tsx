@@ -5,6 +5,8 @@ import { SLIDE_THEME, PRES_LAYOUT } from '@/lib/presentation-constants';
 import { cn } from '@/lib/utils';
 import { RenderedSlide } from '@/lib/slide-utils';
 
+import { LanguageMode } from '@/lib/ppt/types';
+
 interface SlideRendererProps {
   slide: RenderedSlide;
   themeColor: string;
@@ -13,6 +15,7 @@ interface SlideRendererProps {
   zoom?: number;
   style?: React.CSSProperties;
   layout?: 'standard' | 'solving';
+  languageMode?: LanguageMode;
 }
 
 import { StandardPreview } from './ppt/StandardPreview';
@@ -25,7 +28,8 @@ export function SlideRenderer({
   className, 
   zoom = 1, 
   style, 
-  layout = 'standard' 
+  layout = 'standard',
+  languageMode = 'both'
 }: SlideRendererProps) {
   const { titleSlide: titleTheme } = SLIDE_THEME;
   
@@ -63,9 +67,9 @@ export function SlideRenderer({
         </div>
       ) : (
         layout === 'solving' ? (
-          <SolvingPreview slide={slide} />
+          <SolvingPreview slide={slide} languageMode={languageMode} />
         ) : (
-          <StandardPreview slide={slide} themeColor={themeColor} />
+          <StandardPreview slide={slide} themeColor={themeColor} languageMode={languageMode} />
         )
       )}
       

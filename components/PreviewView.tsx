@@ -25,13 +25,15 @@ import {
   Layers,
   Info,
   Braces,
-  Trash2,
   Terminal,
   RefreshCw,
   Eye,
   Settings2,
   AlertCircle,
-  Play
+  Play,
+  Languages,
+  Type,
+  ChevronDown
 } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 import { supabase } from "@/lib/supabase/client";
@@ -42,10 +44,10 @@ import { SlideRenderer } from "./SlideRenderer";
 import { cn } from "@/lib/utils";
 import { RenderedSlide, getRenderedSlides } from "@/lib/slide-utils";
 import { JsonView } from "./JsonView";
-import { DeleteConfirmation } from "./DeleteConfirmation";
 import { DownloadModal } from "./ppt/DownloadModal";
 import { PipelineStep } from "@/lib/pipeline-types";
 import { RawLogsView } from "./RawLogsView";
+import { LanguageMode } from "@/lib/ppt/types";
 
 interface PresentationData {
   id: string;
@@ -79,9 +81,8 @@ export function PreviewView({ id }: { id: string }) {
   const [zoom, setZoom] = useState(1);
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [activeTab, setActiveTab] = useState<'slides' | 'json' | 'debug'>('slides');
-  const [showDeleteModal, setShowDeleteModal] = useState(false);
-  const [isDeleting, setIsDeleting] = useState(false);
   const [isDownloadModalOpen, setIsDownloadModalOpen] = useState(false);
+  const [languageMode, setLanguageMode] = useState<LanguageMode>('both');
   
   const router = useRouter();
   const containerRef = useRef<HTMLDivElement>(null);
@@ -136,22 +137,6 @@ export function PreviewView({ id }: { id: string }) {
     fetchPresentation();
   }, [fetchPresentation]);
 
-  const handleDelete = async () => {
-    setIsDeleting(true);
-    try {
-      const resp = await fetch(`/api/presentations/${id}`, { method: 'DELETE' });
-      const result = await resp.json();
-      if (result.error) throw new Error(result.error);
-      
-      toast.success("Presentation deleted permanently");
-      router.push('/dashboard');
-    } catch (error: any) {
-      toast.error(error.message || "Failed to delete");
-      setIsDeleting(false);
-      setShowDeleteModal(false);
-    }
-  };
-
   const handleLayoutChange = async (layout: 'standard' | 'solving') => {
     if (!data) return;
     setIsProcessing(true);
@@ -170,7 +155,6 @@ export function PreviewView({ id }: { id: string }) {
       const result = await response.json();
       // Result is the updated presentation record
       setData(result);
-      toast.success(`Layout changed to ${layout}`);
     } catch (err: any) {
       toast.error(err.message);
       // Revert on error
@@ -270,11 +254,18 @@ export function PreviewView({ id }: { id: string }) {
   return (
     <div className="flex h-screen flex-col bg-[#050505] text-[#f0f0f0] overflow-hidden">
       <Navbar />
-      <main className="flex-1 flex overflow-hidden relative">
+      <main className="flex-1 flex flex-col md:flex-row overflow-hidden relative">
         {/* Sidebar Nav */}
+        {/* Overlay backdrop for mobile when open */}
+        {isSidebarOpen && (
+            <div 
+                className="fixed md:hidden inset-0 bg-black/60 z-30 backdrop-blur-sm transition-opacity" 
+                onClick={() => setIsSidebarOpen(false)} 
+            />
+        )}
         <aside className={cn(
-          "fixed inset-y-0 left-0 z-40 md:relative translate-x-0 transition-transform duration-300 ease-in-out shrink-0 glass border-r border-white/5 flex flex-col overflow-hidden",
-          isSidebarOpen ? "w-64" : "w-0 md:w-0 -translate-x-full"
+          "flex flex-col z-40 shrink-0 glass border-r border-white/5 transition-all duration-300 ease-in-out absolute md:relative h-full bg-[#080808]/95 overflow-hidden",
+          isSidebarOpen ? "w-[240px] md:w-56 lg:w-[260px] translate-x-0 shadow-2xl md:shadow-none" : "w-0 -translate-x-full pointer-events-none"
         )}>
             <div className="p-4 border-b border-white/5 space-y-4">
                 <div className="flex items-center gap-2 px-2">
@@ -346,6 +337,7 @@ export function PreviewView({ id }: { id: string }) {
                                     themeColor={data.theme.themeColor} 
                                     title={data.title}
                                     layout={data.theme.layout}
+                                    languageMode={languageMode}
                                 />
                              </div>
                         </div>
@@ -360,90 +352,102 @@ export function PreviewView({ id }: { id: string }) {
         </aside>
 
         {/* Workspace Area */}
-        <div className="flex-1 flex flex-col overflow-hidden bg-zinc-950 relative" ref={containerRef}>
+        <div className="flex-1 flex flex-col min-w-0 overflow-hidden bg-zinc-950 relative" ref={containerRef}>
             {/* Header Toolbar */}
             {!isPresenting && (
-                <div className="p-3 border-b border-white/5 bg-[#080808] flex items-center justify-between gap-4 shrink-0 px-6">
-                    <div className="flex items-center gap-4">
-                        <Button variant="ghost" size="icon" className="h-8 w-8 text-zinc-400" onClick={() => setIsSidebarOpen(!isSidebarOpen)}>
+                <div className="p-2 md:p-3 border-b border-white/5 bg-[#080808]/95 backdrop-blur-sm flex items-center justify-between gap-1.5 md:gap-4 shrink-0 px-2 md:px-6 z-50 sticky top-0 w-full overflow-visible">
+                    <div className="flex items-center gap-2 flex-shrink-0 min-w-0">
+                        <Button variant="ghost" size="icon" className="flex h-8 w-8 text-zinc-400 shrink-0" onClick={() => setIsSidebarOpen(!isSidebarOpen)}>
                             <Layers size={16} />
                         </Button>
-                        <div className="h-4 w-px bg-white/10" />
-                        <h2 className="text-xs font-black uppercase tracking-widest text-zinc-400 truncate max-w-sm">
-                            {data.title}
-                        </h2>
+                        <div className="hidden md:block h-4 w-px bg-white/10 shrink-0" />
+                        <div className="relative group flex items-center min-w-0">
+                            <h2 className="text-[10px] md:text-xs font-black uppercase tracking-widest text-zinc-400 truncate max-w-[80px] sm:max-w-[120px] lg:max-w-[200px] cursor-default">
+                                {data.title}
+                            </h2>
+                            <div className="absolute top-full left-0 mt-2 p-2 bg-zinc-900 border border-white/10 rounded shadow-xl text-xs text-white opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50 whitespace-nowrap pointer-events-none">
+                                {data.title}
+                            </div>
+                        </div>
                     </div>
 
                     {activeTab === 'slides' && (
-                        <div className="hidden md:flex items-center justify-center flex-1">
+                        <div className="flex items-center justify-center gap-1.5 md:gap-4 shrink-0">
                             <div className="flex bg-[#121212] p-1 border border-white/5 rounded-lg">
                                 <Button
                                     variant={(data.theme?.layout || 'standard') === 'standard' ? 'secondary' : 'ghost'}
                                     size="sm"
                                     disabled={isProcessing}
                                     onClick={() => handleLayoutChange('standard')}
-                                    className={cn("text-[10px] font-bold uppercase tracking-widest h-7 px-4 transition-all duration-200", 
+                                    className={cn("h-7 px-2 md:px-4 transition-all duration-200 flex items-center justify-center gap-2", 
                                       (data.theme?.layout || 'standard') === 'standard' ? "bg-zinc-800 text-white shadow-sm" : "text-zinc-500 hover:text-zinc-300")}
+                                    title="Standard Layout"
                                 >
-                                    Standard Layout Mode
+                                    <Layout size={14} />
+                                    <span className="hidden md:inline text-[10px] font-bold uppercase tracking-widest">Standard</span>
                                 </Button>
                                 <Button
                                     variant={data.theme?.layout === 'solving' ? 'secondary' : 'ghost'}
                                     size="sm"
                                     disabled={isProcessing}
                                     onClick={() => handleLayoutChange('solving')}
-                                    className={cn("text-[10px] font-bold uppercase tracking-widest h-7 px-4 transition-all duration-200", 
+                                    className={cn("h-7 px-2 md:px-4 transition-all duration-200 flex items-center justify-center gap-2", 
                                       data.theme?.layout === 'solving' ? "bg-zinc-800 text-white shadow-sm" : "text-zinc-500 hover:text-zinc-300")}
+                                    title="Solving Layout"
                                 >
-                                    Solving Layout Mode
+                                    <Layers size={14} />
+                                    <span className="hidden md:inline text-[10px] font-bold uppercase tracking-widest">Solving</span>
                                 </Button>
+                            </div>
+
+                            <div className="flex relative group">
+                                <div className="bg-[#121212] border border-white/5 rounded-lg h-7 md:h-9 flex items-center px-1.5 md:px-3 cursor-pointer select-none">
+                                    <Languages size={14} className="text-zinc-400 md:mr-2" />
+                                    <span className="hidden md:flex text-[10px] items-center font-bold uppercase tracking-widest text-zinc-300 md:mr-4">
+                                        {languageMode === 'both' ? 'EN + HI' : languageMode === 'english' ? 'English Only' : 'Hindi Only'}
+                                    </span>
+                                    <ChevronDown size={14} className="hidden md:block text-zinc-500 group-hover:text-zinc-300 transition-colors" />
+                                </div>
+                                <div className="absolute top-full left-1/2 -translate-x-1/2 md:translate-x-0 md:left-auto md:right-0 mt-1 w-32 md:w-36 bg-[#121212] border border-white/5 rounded-lg shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all -translate-y-2 group-hover:translate-y-0 z-50 flex flex-col p-1">
+                                    <button onClick={() => setLanguageMode('both')} className={cn("text-left px-3 py-2 text-[10px] font-bold uppercase tracking-widest rounded-md", languageMode === 'both' ? 'bg-zinc-800 text-white' : 'text-zinc-400 hover:bg-white/5 hover:text-zinc-200')}>EN + HI</button>
+                                    <button onClick={() => setLanguageMode('english')} className={cn("text-left px-3 py-2 text-[10px] font-bold uppercase tracking-widest rounded-md", languageMode === 'english' ? 'bg-zinc-800 text-white' : 'text-zinc-400 hover:bg-white/5 hover:text-zinc-200')}>English Only</button>
+                                    <button onClick={() => setLanguageMode('hindi')} className={cn("text-left px-3 py-2 text-[10px] font-bold uppercase tracking-widest rounded-md", languageMode === 'hindi' ? 'bg-zinc-800 text-white' : 'text-zinc-400 hover:bg-white/5 hover:text-zinc-200')}>Hindi Only</button>
+                                </div>
                             </div>
                         </div>
                     )}
 
-                    <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-1 md:gap-3 shrink-0">
                         {activeTab === 'slides' && (
                             <>
-                                <div className="flex items-center bg-white/[0.03] rounded-full border border-white/10 px-3 h-8">
-                                    <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => setZoom(z => Math.max(0.2, z-0.1))}><ZoomOut size={12}/></Button>
-                                    <span className="text-[10px] font-bold w-12 text-center">{Math.round(zoom*100)}%</span>
-                                    <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => setZoom(z => Math.min(2, z+0.1))}><ZoomIn size={12}/></Button>
+                                <div className="flex items-center bg-white/[0.03] rounded-full border border-white/10 px-1.5 sm:px-3 h-7 sm:h-8 shrink-0">
+                                    <Button variant="ghost" size="icon" className="h-5 w-5 sm:h-6 sm:w-6" onClick={() => setZoom(z => Math.max(0.2, z-0.1))}><ZoomOut size={12}/></Button>
+                                    <span className="text-[9px] sm:text-[10px] font-bold w-8 sm:w-12 text-center">{Math.round(zoom*100)}%</span>
+                                    <Button variant="ghost" size="icon" className="h-5 w-5 sm:h-6 sm:w-6" onClick={() => setZoom(z => Math.min(2, z+0.1))}><ZoomIn size={12}/></Button>
                                 </div>
                                 <Button 
-                                    onClick={toggleFullscreen}
-                                    variant="ghost" 
-                                    size="icon" 
-                                    className="h-8 w-8 bg-white/5 rounded-full"
-                                >
-                                    {isFullscreen ? <Minimize2 size={14} /> : <Maximize2 size={14} />}
-                                </Button>
-                                <Button 
                                     onClick={handlePresent}
-                                    size="sm" 
-                                    className="bg-zinc-100 hover:bg-white text-zinc-900 text-[10px] font-black h-8 px-4 gap-2 rounded-full shadow-[0_0_15px_rgba(255,255,255,0.1)]"
+                                    size="icon" 
+                                    className="bg-zinc-800 hover:bg-zinc-700 h-7 w-7 sm:h-8 sm:w-8 rounded-full flex items-center justify-center shrink-0 shadow-lg shadow-white/5"
+                                    title="Present Fullscreen"
                                 >
-                                    <Play size={14} fill="currentColor" /> Present
+                                    <Play size={14} className="ml-0.5" />
                                 </Button>
                                 <Button 
                                     onClick={() => setIsDownloadModalOpen(true)}
-                                    size="sm" 
-                                    className="bg-indigo-600 hover:bg-indigo-700 text-[10px] font-black h-8 px-4 gap-2 rounded-full"
+                                    size="icon" 
+                                    className="bg-indigo-600 hover:bg-indigo-700 h-7 w-7 sm:h-8 sm:w-8 rounded-full flex items-center justify-center shrink-0 shadow-lg shadow-indigo-600/20"
+                                    title="Download Presentation"
                                 >
-                                    <FileDown size={14} /> Download
+                                    <FileDown size={14} />
                                 </Button>
                             </>
                         )}
-                        <Button 
-                            variant="ghost" size="icon" className="h-8 w-8 bg-white/5 rounded-full hover:text-red-400"
-                            onClick={() => setShowDeleteModal(true)}
-                        >
-                            <Trash2 size={14}/>
-                        </Button>
                     </div>
                 </div>
             )}
 
-            <div className={cn("flex-1 overflow-auto custom-scrollbar", isPresenting ? "p-0" : "p-6 md:p-12")}>
+            <div className={cn("flex-1 overflow-auto custom-scrollbar flex flex-col origin-top", isPresenting ? "p-0" : "p-4 md:p-12")}>
                 <AnimatePresence mode="wait">
                     {activeTab === 'slides' && !isComplete && (
                         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="h-full flex flex-col items-center justify-center max-w-lg mx-auto text-center">
@@ -486,24 +490,25 @@ export function PreviewView({ id }: { id: string }) {
                                         themeColor={data.theme.themeColor} 
                                         title={data.title}
                                         layout={data.theme.layout}
+                                        languageMode={languageMode}
                                     />
                                     
-                                    <div className={cn("absolute inset-y-0 -left-6 flex items-center", isPresenting && "left-4 opacity-0 hover:opacity-100 transition-opacity")}>
+                                     <div className={cn("absolute inset-y-0 -left-4 md:-left-6 flex items-center", isPresenting && "left-4 opacity-0 hover:opacity-100 transition-opacity")}>
                                         <Button 
                                             variant="ghost" size="icon" 
                                             disabled={currentSlide === 0} 
                                             onClick={() => setCurrentSlide(currentSlide - 1)}
-                                            className="h-12 w-12 rounded-full bg-black/50 backdrop-blur-md text-white border border-white/5"
+                                            className="h-10 w-10 md:h-12 md:w-12 rounded-full bg-black/50 backdrop-blur-md text-white border border-white/5"
                                         >
                                             <ChevronLeft size={24}/>
                                         </Button>
                                     </div>
-                                    <div className={cn("absolute inset-y-0 -right-6 flex items-center", isPresenting && "right-4 opacity-0 hover:opacity-100 transition-opacity")}>
+                                    <div className={cn("absolute inset-y-0 -right-4 md:-right-6 flex items-center", isPresenting && "right-4 opacity-0 hover:opacity-100 transition-opacity")}>
                                         <Button 
                                             variant="ghost" size="icon" 
                                             disabled={currentSlide === totalSlides - 1} 
                                             onClick={() => setCurrentSlide(currentSlide + 1)}
-                                            className="h-12 w-12 rounded-full bg-black/50 backdrop-blur-md text-white border border-white/5"
+                                            className="h-10 w-10 md:h-12 md:w-12 rounded-full bg-black/50 backdrop-blur-md text-white border border-white/5"
                                         >
                                             <ChevronRight size={24}/>
                                         </Button>
@@ -533,20 +538,47 @@ export function PreviewView({ id }: { id: string }) {
                     )}
                 </AnimatePresence>
             </div>
+            
+            {/* Mobile Bottom Thumbnails Carousel */}
+            {!isPresenting && activeTab === 'slides' && isComplete && (
+                <>
+                <div className="md:hidden h-24 border-t border-white/5 bg-[#080808]/95 backdrop-blur-sm shrink-0 flex items-center px-4 gap-3 overflow-x-auto custom-scrollbar" style={{ WebkitOverflowScrolling: 'touch' }}>
+                  {slides.map((slide, i) => (
+                    <button
+                        key={i}
+                        onClick={() => setCurrentSlide(i)}
+                        className={cn(
+                            "w-24 shrink-0 rounded-lg overflow-hidden border-2 transition-all relative flex flex-col",
+                            currentSlide === i ? "border-indigo-500 scale-[1.05]" : "border-white/5 opacity-50"
+                        )}
+                    >
+                        <div className="aspect-video relative bg-zinc-900 w-full overflow-hidden">
+                             <div className="absolute inset-0 origin-top-left scale-[0.25]" style={{ width: '400%', height: '400%' }}>
+                                <SlideRenderer 
+                                    slide={slide} 
+                                    themeColor={data.theme.themeColor} 
+                                    title={data.title}
+                                    layout={data.theme.layout}
+                                    languageMode={languageMode}
+                                />
+                             </div>
+                        </div>
+                        <div className="px-1 py-0.5 bg-black/60 absolute bottom-0 left-0 right-0 flex justify-between items-center text-[8px] font-bold text-zinc-400">
+                            <span>{i + 1}</span>
+                        </div>
+                    </button>
+                  ))}
+                </div>
+                </>
+            )}
         </div>
-
-        <DeleteConfirmation 
-            isOpen={showDeleteModal}
-            onClose={() => setShowDeleteModal(false)}
-            onConfirm={handleDelete}
-            isLoading={isDeleting}
-        />
 
         <DownloadModal 
             isOpen={isDownloadModalOpen}
             onClose={() => setIsDownloadModalOpen(false)}
             defaultTitle={data.title}
             presentationId={id}
+            languageMode={languageMode}
         />
       </main>
       

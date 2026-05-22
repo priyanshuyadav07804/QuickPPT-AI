@@ -5,16 +5,22 @@ import { SLIDE_THEME, PRES_LAYOUT } from '@/lib/presentation-constants';
 import { RenderedSlide } from '@/lib/slide-utils';
 import { calculateSolvingLayout } from '@/lib/ppt/layout-engine';
 
+import { LanguageMode } from '@/lib/ppt/types';
+
 interface Props {
   slide: RenderedSlide;
+  languageMode?: LanguageMode;
 }
 
-export function SolvingPreview({ slide }: Props) {
+export function SolvingPreview({ slide, languageMode = 'both' }: Props) {
   const { questionSlide: qTheme } = SLIDE_THEME;
   const layout = qTheme.layouts.solving;
 
-  const english = slide.english || slide.content;
-  const hindi = slide.hindi || "";
+  let english = slide.english || slide.content;
+  let hindi = slide.hindi || "";
+
+  if (languageMode === 'english') hindi = "";
+  if (languageMode === 'hindi') english = "";
   
   const { baseFontSize, hindiFontSize, optionsFontSize } = calculateSolvingLayout(english, hindi, layout.body.w);
   
@@ -31,17 +37,20 @@ export function SolvingPreview({ slide }: Props) {
       <div className="w-[50%] h-full p-[4%] flex flex-col justify-start overflow-hidden">
         <div className="flex flex-col flex-1 overflow-hidden min-h-0">
           {/* English Block */}
-          <div className="text-[#1f2937] leading-[1.3] mb-[2%]" style={{ fontSize: toVw(baseFontSize) }}>
-            {slide.qNum && !slide.isContinuation && <span className="font-bold text-[#111827] mr-1.5">{slide.qNum}.</span>}
-            {english}
-          </div>
+          {english ? (
+            <div className="text-[#1f2937] leading-[1.3] mb-[2%]" style={{ fontSize: toVw(baseFontSize) }}>
+              {slide.qNum && !slide.isContinuation && <span className="font-bold text-[#111827] mr-1.5">{slide.qNum}.</span>}
+              {english}
+            </div>
+          ) : null}
 
           {/* Hindi Block */}
-          {hindi && (
-            <div className="text-[#374151] leading-[1.4] mt-[1%]" style={{ fontSize: toVw(hindiFontSize) }}>
+          {hindi ? (
+            <div className={`text-[#374151] leading-[1.4]` + (english ? " mt-[1%]" : "")} style={{ fontSize: toVw(hindiFontSize) }}>
+               {!english && slide.qNum && !slide.isContinuation && <span className="font-bold text-[#111827] mr-1.5">{slide.qNum}.</span>}
               {hindi}
             </div>
-          )}
+          ) : null}
         </div>
 
         {/* Options 2x2 */}

@@ -1,11 +1,14 @@
 import { Question } from "../gemini";
 import { RenderedSlide } from "../slide-utils";
 
+export type LanguageMode = 'both' | 'english' | 'hindi';
+
 export interface PPTConfig {
   title: string;
   themeColor: string;
   accentColor: string;
   layout?: 'standard' | 'solving';
+  languageMode?: LanguageMode;
 }
 
 export interface LayoutOptions {

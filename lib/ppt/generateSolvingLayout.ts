@@ -19,8 +19,11 @@ export function addSolvingQuestionSlide(pres: pptxgen, s: RenderedSlide, config:
   });
 
   if (s.type === 'question') {
-    const english = s.english || s.content;
-    const hindi = s.hindi || "";
+    let english = s.english || s.content;
+    let hindi = s.hindi || "";
+    
+    if (config.languageMode === 'english') hindi = "";
+    if (config.languageMode === 'hindi') english = "";
     
     // Use dynamic scaler
     const metrics = calculateSolvingLayout(english, hindi, layout.body.w);
@@ -60,7 +63,7 @@ export function addSolvingQuestionSlide(pres: pptxgen, s: RenderedSlide, config:
       });
     }
 
-    // 2x2 Options Grid (fixed to bottom)
+    // 2x2 Options Grid
     if (s.optionList && s.optionList.length >= 4 && !s.isContinuation) {
       const gapX = 0.1;
       const gapY = 0.1;

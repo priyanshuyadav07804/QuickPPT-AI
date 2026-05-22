@@ -13,6 +13,7 @@ export async function GET(
   const layout = (searchParams.get('layout') as 'standard' | 'solving') || 'standard';
   const format = (searchParams.get('format') as 'pptx' | 'pdf') || 'pptx';
   const customFilename = searchParams.get('filename');
+  const languageMode = (searchParams.get('languageMode') as 'both' | 'english' | 'hindi') || 'both';
   
   try {
     const supabase = await createClient();
@@ -34,7 +35,8 @@ export async function GET(
       title: presentation.title,
       themeColor: presentation.theme.themeColor,
       accentColor: presentation.theme.accentColor,
-      layout: layout
+      layout: layout,
+      languageMode: languageMode
     });
 
     const baseName = customFilename || presentation.title.toLowerCase().replace(/[^a-z0-9]/g, '-');

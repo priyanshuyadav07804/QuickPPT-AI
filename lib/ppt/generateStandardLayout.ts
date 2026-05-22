@@ -10,8 +10,11 @@ export function addStandardQuestionSlide(pres: pptxgen, s: RenderedSlide, config
   const layout = qTheme.layouts.standard;
 
   if (s.type === 'question') {
-    const english = s.english || s.content;
-    const hindi = s.hindi || "";
+    let english = s.english || s.content;
+    let hindi = s.hindi || "";
+    
+    if (config.languageMode === 'english') hindi = "";
+    if (config.languageMode === 'hindi') english = "";
     
     // Use dynamic scaler
     const metrics = calculateStandardLayout(english, hindi, layout.body.w);
@@ -51,15 +54,14 @@ export function addStandardQuestionSlide(pres: pptxgen, s: RenderedSlide, config
       });
     }
 
-    // 2x2 Options Grid (fixed to bottom)
+    // 2x2 Options Grid
     if (s.optionList && s.optionList.length >= 4 && !s.isContinuation) {
       const gapX = 0.2;
       const gapY = 0.15;
       const optW = (layout.body.w - gapX) / 2;
       const optH = 0.45; // slightly taller to match HTML 20%
       
-      // Bottom pin calculation: badge is at 5.3, so options block ends around 5.1
-      // Start Y = 5.1 - (2 * 0.45 + 0.15) = 4.05
+      // Pin options to bottom region consistently
       const startY = PRES_LAYOUT.height - 0.4 - (2 * optH + gapY);
       
       s.optionList.forEach((opt, idx) => {

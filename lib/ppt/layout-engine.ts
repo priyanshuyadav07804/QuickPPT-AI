@@ -19,9 +19,12 @@ export function calculateStandardLayout(english: string, hindi: string, usableW:
   if (totalLen > 2000) baseFontSize = 13.5;
 
   const getHeights = (fontSize: number) => {
-    const charsPerLineEng = Math.floor(usableW * (100 / fontSize) * 0.7); 
-    const engLines = Math.ceil((english.length + 5) / charsPerLineEng) || 1;
-    const englishHeight = (engLines * (fontSize / 72) * 1.5) + 0.1;
+    let englishHeight = 0;
+    if (english) {
+      const charsPerLineEng = Math.floor(usableW * (100 / fontSize) * 0.7); 
+      const engLines = Math.ceil((english.length + 5) / charsPerLineEng) || 1;
+      englishHeight = (engLines * (fontSize / 72) * 1.5) + 0.1;
+    }
 
     const origFontSize = fontSize - 4;
     const hindiSize = Math.max(origFontSize * 0.95, 8.5) + 4;
@@ -58,9 +61,12 @@ export function calculateSolvingLayout(english: string, hindi: string, usableW: 
   if (totalLen > 1600) baseFontSize = 12.5;
 
   const getHeights = (fontSize: number) => {
-    const charsPerLineEng = Math.floor(usableW * (100 / fontSize) * 0.7);
-    const engLines = Math.ceil((english.length + 5) / charsPerLineEng) || 1;
-    const englishHeight = (engLines * (fontSize / 72) * 1.5) + 0.1;
+    let englishHeight = 0;
+    if (english) {
+      const charsPerLineEng = Math.floor(usableW * (100 / fontSize) * 0.7);
+      const engLines = Math.ceil((english.length + 5) / charsPerLineEng) || 1;
+      englishHeight = (engLines * (fontSize / 72) * 1.5) + 0.1;
+    }
 
     const origFontSize = fontSize - 4;
     const hindiSize = Math.max(origFontSize * 0.95, 8) + 4;

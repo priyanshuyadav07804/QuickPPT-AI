@@ -29,11 +29,12 @@ interface DownloadModalProps {
   onClose: () => void;
   defaultTitle: string;
   presentationId: string;
+  languageMode?: string;
 }
 
 type LayoutMode = 'standard' | 'solving';
 
-export function DownloadModal({ isOpen, onClose, defaultTitle, presentationId }: DownloadModalProps) {
+export function DownloadModal({ isOpen, onClose, defaultTitle, presentationId, languageMode = 'both' }: DownloadModalProps) {
   const [layout, setLayout] = useState<LayoutMode>('standard');
   const [filename, setFilename] = useState(defaultTitle.toLowerCase().replace(/[^a-z0-9]/g, '-'));
   const [isDownloading, setIsDownloading] = useState(false);
@@ -44,7 +45,7 @@ export function DownloadModal({ isOpen, onClose, defaultTitle, presentationId }:
   const handleDownload = async () => {
     try {
       setIsDownloading(true);
-      const url = `/api/presentations/${presentationId}/download?layout=${layout}&format=pptx&filename=${encodeURIComponent(filename)}`;
+      const url = `/api/presentations/${presentationId}/download?layout=${layout}&format=pptx&filename=${encodeURIComponent(filename)}&languageMode=${languageMode}`;
       
       const response = await fetch(url);
       if (!response.ok) {
@@ -94,12 +95,12 @@ export function DownloadModal({ isOpen, onClose, defaultTitle, presentationId }:
               onValueChange={(val) => setLayout(val as LayoutMode)}
               className="grid grid-cols-2 gap-4"
             >
-              <div>
-                <RadioGroupItem value="standard" id="standard" className="sr-only" />
+              <div className="relative">
+                <RadioGroupItem value="standard" id="standard" className="absolute top-4 right-4 z-10 bg-zinc-900 border-zinc-600 data-[state=checked]:bg-indigo-600 data-[state=checked]:border-indigo-600" />
                 <Label
                   htmlFor="standard"
                   className={cn(
-                    "flex flex-col items-center justify-between rounded-md border-2 border-zinc-800 bg-zinc-900/50 p-4 hover:bg-zinc-900 hover:text-white cursor-pointer transition-all",
+                    "flex flex-col items-center justify-between rounded-md border-2 border-zinc-800 bg-zinc-900/50 p-4 hover:bg-zinc-900 hover:text-white cursor-pointer transition-all h-full relative",
                     layout === 'standard' && "border-indigo-500 bg-zinc-900 ring-1 ring-indigo-500/20"
                   )}
                 >
@@ -108,13 +109,13 @@ export function DownloadModal({ isOpen, onClose, defaultTitle, presentationId }:
                   <div className="text-[10px] text-zinc-500 mt-1 text-center">Full question view</div>
                 </Label>
               </div>
-              <div>
-                <RadioGroupItem value="solving" id="solving" className="sr-only" />
+              <div className="relative">
+                <RadioGroupItem value="solving" id="solving" className="absolute top-4 right-4 z-10 bg-zinc-900 border-zinc-600 data-[state=checked]:bg-emerald-600 data-[state=checked]:border-emerald-600" />
                 <Label
                   htmlFor="solving"
                   className={cn(
-                    "flex flex-col items-center justify-between rounded-md border-2 border-zinc-800 bg-zinc-900/50 p-4 hover:bg-zinc-900 hover:text-white cursor-pointer transition-all",
-                    layout === 'solving' && "border-indigo-500 bg-zinc-900 ring-1 ring-indigo-500/20"
+                    "flex flex-col items-center justify-between rounded-md border-2 border-zinc-800 bg-zinc-900/50 p-4 hover:bg-zinc-900 hover:text-white cursor-pointer transition-all h-full relative",
+                    layout === 'solving' && "border-emerald-500 bg-zinc-900 ring-1 ring-emerald-500/20"
                   )}
                 >
                   <PenTool className="mb-3 h-6 w-6 text-emerald-400" />
