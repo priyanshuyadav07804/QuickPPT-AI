@@ -83,6 +83,7 @@ export function PreviewView({ id }: { id: string }) {
   const [activeTab, setActiveTab] = useState<'slides' | 'json' | 'debug'>('slides');
   const [isDownloadModalOpen, setIsDownloadModalOpen] = useState(false);
   const [languageMode, setLanguageMode] = useState<LanguageMode>('both');
+  const [isLangDropdownOpen, setIsLangDropdownOpen] = useState(false);
   
   const router = useRouter();
   const containerRef = useRef<HTMLDivElement>(null);
@@ -400,18 +401,29 @@ export function PreviewView({ id }: { id: string }) {
                                 </Button>
                             </div>
 
-                            <div className="flex relative group">
-                                <div className="bg-[#121212] border border-white/5 rounded-lg h-7 md:h-9 flex items-center px-1.5 md:px-3 cursor-pointer select-none">
+                            <div className="flex relative items-center">
+                                <div 
+                                    className="bg-[#121212] border border-white/5 rounded-lg h-7 md:h-9 flex items-center px-1.5 md:px-3 cursor-pointer select-none"
+                                    onClick={() => setIsLangDropdownOpen(!isLangDropdownOpen)}
+                                >
                                     <Languages size={14} className="text-zinc-400 md:mr-2" />
                                     <span className="hidden md:flex text-[10px] items-center font-bold uppercase tracking-widest text-zinc-300 md:mr-4">
                                         {languageMode === 'both' ? 'EN + HI' : languageMode === 'english' ? 'English Only' : 'Hindi Only'}
                                     </span>
-                                    <ChevronDown size={14} className="hidden md:block text-zinc-500 group-hover:text-zinc-300 transition-colors" />
+                                    <ChevronDown size={14} className={cn("hidden md:block text-zinc-500 transition-transform", isLangDropdownOpen && "rotate-180")} />
                                 </div>
-                                <div className="absolute top-full left-1/2 -translate-x-1/2 md:translate-x-0 md:left-auto md:right-0 mt-1 w-32 md:w-36 bg-[#121212] border border-white/5 rounded-lg shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all -translate-y-2 group-hover:translate-y-0 z-50 flex flex-col p-1">
-                                    <button onClick={() => setLanguageMode('both')} className={cn("text-left px-3 py-2 text-[10px] font-bold uppercase tracking-widest rounded-md", languageMode === 'both' ? 'bg-zinc-800 text-white' : 'text-zinc-400 hover:bg-white/5 hover:text-zinc-200')}>EN + HI</button>
-                                    <button onClick={() => setLanguageMode('english')} className={cn("text-left px-3 py-2 text-[10px] font-bold uppercase tracking-widest rounded-md", languageMode === 'english' ? 'bg-zinc-800 text-white' : 'text-zinc-400 hover:bg-white/5 hover:text-zinc-200')}>English Only</button>
-                                    <button onClick={() => setLanguageMode('hindi')} className={cn("text-left px-3 py-2 text-[10px] font-bold uppercase tracking-widest rounded-md", languageMode === 'hindi' ? 'bg-zinc-800 text-white' : 'text-zinc-400 hover:bg-white/5 hover:text-zinc-200')}>Hindi Only</button>
+
+                                {isLangDropdownOpen && (
+                                    <div className="fixed inset-0 z-40" onClick={() => setIsLangDropdownOpen(false)} />
+                                )}
+
+                                <div className={cn(
+                                    "absolute top-full left-1/2 -translate-x-1/2 md:translate-x-0 md:left-auto md:right-0 mt-1 w-32 md:w-36 bg-[#121212] border border-white/5 rounded-lg shadow-xl transition-all z-50 flex flex-col p-1",
+                                    isLangDropdownOpen ? "opacity-100 visible translate-y-0" : "opacity-0 invisible -translate-y-2 pointer-events-none"
+                                )}>
+                                    <button onClick={() => { setLanguageMode('both'); setIsLangDropdownOpen(false); }} className={cn("text-left px-3 py-2 text-[10px] font-bold uppercase tracking-widest rounded-md", languageMode === 'both' ? 'bg-zinc-800 text-white' : 'text-zinc-400 hover:bg-white/5 hover:text-zinc-200')}>EN + HI</button>
+                                    <button onClick={() => { setLanguageMode('english'); setIsLangDropdownOpen(false); }} className={cn("text-left px-3 py-2 text-[10px] font-bold uppercase tracking-widest rounded-md", languageMode === 'english' ? 'bg-zinc-800 text-white' : 'text-zinc-400 hover:bg-white/5 hover:text-zinc-200')}>English Only</button>
+                                    <button onClick={() => { setLanguageMode('hindi'); setIsLangDropdownOpen(false); }} className={cn("text-left px-3 py-2 text-[10px] font-bold uppercase tracking-widest rounded-md", languageMode === 'hindi' ? 'bg-zinc-800 text-white' : 'text-zinc-400 hover:bg-white/5 hover:text-zinc-200')}>Hindi Only</button>
                                 </div>
                             </div>
                         </div>
@@ -447,7 +459,7 @@ export function PreviewView({ id }: { id: string }) {
                 </div>
             )}
 
-            <div className={cn("flex-1 overflow-auto custom-scrollbar flex flex-col origin-top", isPresenting ? "p-0" : "p-4 md:p-12")}>
+            <div className={cn("flex-1 overflow-auto custom-scrollbar flex flex-col origin-top", isPresenting ? "p-0" : "p-2 md:p-12")}>
                 <AnimatePresence mode="wait">
                     {activeTab === 'slides' && !isComplete && (
                         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="h-full flex flex-col items-center justify-center max-w-lg mx-auto text-center">
@@ -473,7 +485,7 @@ export function PreviewView({ id }: { id: string }) {
                     )}
 
                     {activeTab === 'slides' && isComplete && (
-                        <motion.div initial={{ opacity: 0, scale: 0.98 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0 }} className={cn("h-full flex items-center justify-center", isPresenting ? "p-0" : "p-8")}>
+                        <motion.div initial={{ opacity: 0, scale: 0.98 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0 }} className={cn("h-full flex items-center justify-center", isPresenting ? "p-0" : "p-2 md:p-8")}>
                              <div className={cn("relative w-full h-full flex items-center justify-center", isPresenting ? "max-w-none" : "max-w-5xl")}>
                                  <div 
                                     className="relative transition-all duration-300 shadow-2xl" 
@@ -493,7 +505,7 @@ export function PreviewView({ id }: { id: string }) {
                                         languageMode={languageMode}
                                     />
                                     
-                                     <div className={cn("absolute inset-y-0 -left-4 md:-left-6 flex items-center", isPresenting && "left-4 opacity-0 hover:opacity-100 transition-opacity")}>
+                                     <div className={cn("absolute inset-y-0 -left-2 sm:-left-4 md:-left-6 flex items-center", isPresenting && "left-4 opacity-0 hover:opacity-100 transition-opacity")}>
                                         <Button 
                                             variant="ghost" size="icon" 
                                             disabled={currentSlide === 0} 
@@ -503,7 +515,7 @@ export function PreviewView({ id }: { id: string }) {
                                             <ChevronLeft size={24}/>
                                         </Button>
                                     </div>
-                                    <div className={cn("absolute inset-y-0 -right-4 md:-right-6 flex items-center", isPresenting && "right-4 opacity-0 hover:opacity-100 transition-opacity")}>
+                                    <div className={cn("absolute inset-y-0 -right-2 sm:-right-4 md:-right-6 flex items-center", isPresenting && "right-4 opacity-0 hover:opacity-100 transition-opacity")}>
                                         <Button 
                                             variant="ghost" size="icon" 
                                             disabled={currentSlide === totalSlides - 1} 
